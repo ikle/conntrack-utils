@@ -1,4 +1,5 @@
 TARGETS = conntrack-flush route-monitor conntrack-nat-callidus
+TARGETS += udhcpc-monitor
 
 all: $(TARGETS)
 
@@ -19,6 +20,9 @@ conntrack-flush: nfct-flush-net.o
 
 route-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags --libs`
 route-monitor: nl-monitor.o rt-label.o
+
+udhcpc-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags --libs`
+udhcpc-monitor: nl-monitor.o
 
 conntrack-nat-callidus: CFLAGS += `pkg-config $(NL_DEPS) --cflags --libs`
 conntrack-nat-callidus: CFLAGS += `pkg-config $(CONNTRACK_DEPS) --cflags --libs`
