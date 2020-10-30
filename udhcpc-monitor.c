@@ -116,7 +116,7 @@ int main (void)
 
 	if ((ret = nl_execute (cb, NETLINK_ROUTE, RTM_GETLINK)) < 0 ||
 	    (ret = nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_LINK, 0)) < 0) {
-		nl_perror (ret, "udhcpc monitor");
+		syslog (LOG_ERR, "netlink error: %s", nl_geterror (ret));
 		return 1;
 	}
 
