@@ -1,3 +1,11 @@
+/*
+ * Linux NetLink Monitor Library
+ *
+ * Copyright (c) 2016-2020 Alexei A. Smekalkine <ikle@ikle.ru>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #include <stdarg.h>
 #include <netlink/route/rtnl.h>
 
