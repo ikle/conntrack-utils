@@ -11,7 +11,7 @@ install: $(TARGETS)
 	install -D -d $(DESTDIR)/$(PREFIX)/bin
 	install -s -m 0755 $^ $(DESTDIR)/$(PREFIX)/bin
 
-NL_DEPS = "libnl-1"
+NL_DEPS = "libnl-3.0 libnl-route-3.0"
 CONNTRACK_DEPS = "libnetfilter_conntrack"
 
 conntrack-flush: CFLAGS += `pkg-config $(CONNTRACK_DEPS) --cflags --libs`

@@ -383,15 +383,17 @@ static int cb (struct nl_msg *m, void *ctx)
 
 int main (void)
 {
-	if (nl_execute (cb, NETLINK_ROUTE, RTM_GETLINK) < 0 ||
-	    nl_execute (cb, NETLINK_ROUTE, RTM_GETADDR) < 0 ||
-	    nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE) < 0 ||
-	    nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_LINK,
+	int ret;
+
+	if ((ret = nl_execute (cb, NETLINK_ROUTE, RTM_GETLINK)) < 0 ||
+	    (ret = nl_execute (cb, NETLINK_ROUTE, RTM_GETADDR)) < 0 ||
+	    (ret = nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE)) < 0 ||
+	    (ret = nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_LINK,
 					   RTNLGRP_IPV4_ROUTE,
 					   RTNLGRP_IPV6_ROUTE,
 					   RTNLGRP_IPV4_IFADDR,
-					   RTNLGRP_IPV6_IFADDR, 0) < 0) {
-		nl_perror ("netlink monitor");
+					   RTNLGRP_IPV6_IFADDR, 0)) < 0) {
+		nl_perror (ret, "netlink monitor");
 		return 1;
 	}
 
