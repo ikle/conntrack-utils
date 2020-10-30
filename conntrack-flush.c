@@ -3,7 +3,7 @@
 
 #include "nfct-flush-net.h"
 
-static in_addr_aton (const char *from, struct in_net *net)
+static int in_addr_aton (const char *from, struct in_net *net)
 {
 	unsigned a, b, c, d, m;
 	int n;
