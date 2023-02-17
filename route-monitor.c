@@ -191,6 +191,14 @@ static void link_show_rta (struct ifinfomsg *o, struct rtattr *rta)
 	case IFLA_STATS64:
 	case IFLA_AF_SPEC:
 	case IFLA_GROUP:
+	case IFLA_PROMISCUITY:
+	case IFLA_NUM_TX_QUEUES:
+	case IFLA_NUM_RX_QUEUES:
+	case IFLA_CARRIER:
+	case IFLA_CARRIER_CHANGES:
+	case IFLA_PROTO_DOWN:
+	case IFLA_GSO_MAX_SEGS:
+	case IFLA_GSO_MAX_SIZE:
 		/* ignore it */
 		break;
 	default:
