@@ -200,8 +200,9 @@ static void link_show_rta (struct ifinfomsg *o, struct rtattr *rta)
 	}
 }
 
-static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
+static int process_link (struct nlmsghdr *h, void *ctx)
 {
+	struct ifinfomsg *o = NLMSG_DATA (h);
 	struct rtattr *rta;
 	int len;
 
@@ -262,8 +263,9 @@ static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta)
 	}
 }
 
-static int process_addr (struct nlmsghdr *h, struct ifaddrmsg *ifa, void *ctx)
+static int process_addr (struct nlmsghdr *h, void *ctx)
 {
+	struct ifaddrmsg *ifa = NLMSG_DATA (h);
 	struct rtattr *rta;
 	int len;
 
@@ -332,8 +334,9 @@ static void route_show_rta (struct rtmsg *rtm, struct rtattr *rta)
 	}
 }
 
-static int process_route (struct nlmsghdr *h, struct rtmsg *rtm, void *ctx)
+static int process_route (struct nlmsghdr *h, void *ctx)
 {
+	struct rtmsg *rtm = NLMSG_DATA (h);
 	struct rtattr *rta;
 	int len;
 
@@ -370,13 +373,13 @@ static int cb (struct nl_msg *m, void *ctx)
 	switch (h->nlmsg_type) {
 	case RTM_NEWLINK:
 	case RTM_DELLINK:
-		return process_link (h, NLMSG_DATA (h), ctx);
+		return process_link (h, ctx);
 	case RTM_NEWADDR:
 	case RTM_DELADDR:
-		return process_addr (h, NLMSG_DATA (h), ctx);
+		return process_addr (h, ctx);
 	case RTM_NEWROUTE:
 	case RTM_DELROUTE:
-		return process_route (h, NLMSG_DATA (h), ctx);
+		return process_route (h, ctx);
 	}
 
 	return 0;
