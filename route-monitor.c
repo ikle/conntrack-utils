@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <linux/netlink.h>
 #include <linux/wireless.h>
 #include <netlink/netlink.h>
 #include <netlink/msg.h>
@@ -369,13 +370,13 @@ static int cb (struct nl_msg *m, void *ctx)
 	switch (h->nlmsg_type) {
 	case RTM_NEWLINK:
 	case RTM_DELLINK:
-		return process_link (h, nlmsg_data (h), ctx);
+		return process_link (h, NLMSG_DATA (h), ctx);
 	case RTM_NEWADDR:
 	case RTM_DELADDR:
-		return process_addr (h, nlmsg_data (h), ctx);
+		return process_addr (h, NLMSG_DATA (h), ctx);
 	case RTM_NEWROUTE:
 	case RTM_DELROUTE:
-		return process_route (h, nlmsg_data (h), ctx);
+		return process_route (h, NLMSG_DATA (h), ctx);
 	}
 
 	return 0;
