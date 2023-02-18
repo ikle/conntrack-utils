@@ -231,7 +231,8 @@ static int process_link (struct nlmsghdr *h, void *ctx)
 	return 0;
 }
 
-static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta)
+static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta,
+			   struct rtattr *addr)
 {
 	char buf[INET6_ADDRSTRLEN];
 	const char *type = "", *p;
@@ -254,6 +255,10 @@ static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta)
 		printf (" address %s/%d", p, ifa->ifa_prefixlen);
 		break;
 	case IFA_LOCAL:
+		if (addr != NULL && addr->rta_len == rta->rta_len &&
+		    memcmp (RTA_DATA (addr), RTA_DATA (rta),
+			    RTA_PAYLOAD (rta)) == 0)
+			break;
 	case IFA_BROADCAST:
 	case IFA_ANYCAST:
 	case IFA_MULTICAST:
@@ -274,7 +279,7 @@ static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta)
 static int process_addr (struct nlmsghdr *h, void *ctx)
 {
 	struct ifaddrmsg *ifa = NLMSG_DATA (h);
-	struct rtattr *rta;
+	struct rtattr *rta, *addr = NULL;
 	int len;
 
 	if (ifa->ifa_family != AF_INET && ifa->ifa_family != AF_INET6)
@@ -286,8 +291,12 @@ static int process_addr (struct nlmsghdr *h, void *ctx)
 		rta = IFA_RTA (ifa), len = IFA_PAYLOAD (h);
 		RTA_OK (rta, len);
 		rta = RTA_NEXT (rta, len)
-	)
-		addr_show_rta (ifa, rta);
+	) {
+		if (rta->rta_type == IFA_ADDRESS)
+			addr = rta;
+
+		addr_show_rta (ifa, rta, addr);
+	}
 
 	printf (" dev %d", ifa->ifa_index);
 	show_scope (ifa->ifa_scope);
