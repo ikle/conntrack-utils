@@ -30,7 +30,7 @@ static int cb(struct nl_msg *m, void *ctx)
 	if (h->nlmsg_type != RTM_DELROUTE)
 		return 0;
 
-	rtm = nlmsg_data (h);
+	rtm = NLMSG_DATA (h);
 
 	if (rtm->rtm_family != AF_INET)
 		return 0;
