@@ -97,7 +97,7 @@ static int cb (struct nl_msg *m, void *ctx)
 
 	switch (h->nlmsg_type) {
 	case RTM_NEWLINK:
-		return process_link (h, nlmsg_data (h), ctx);
+		return process_link (h, NLMSG_DATA (h), ctx);
 	}
 
 	return 0;
