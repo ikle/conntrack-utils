@@ -13,6 +13,8 @@ install: $(TOOLS) $(SERVICES)
 	install -s -m 0755 $(TOOLS) $(DESTDIR)/$(PREFIX)/bin
 	install -D -d $(DESTDIR)/$(PREFIX)/sbin
 	install -s -m 0755 $(SERVICES) $(DESTDIR)/$(PREFIX)/sbin
+	install -D -d $(DESTDIR)/etc/init.d
+	install -m 0755 udhcpc-monitor.init $(DESTDIR)/etc/init.d/udhcpc-monitor
 
 NL_DEPS = "libnl-3.0 libnl-route-3.0"
 CONNTRACK_DEPS = "libnetfilter_conntrack"

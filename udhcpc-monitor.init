@@ -1,0 +1,8 @@
+#!/bin/sh
+
+NAME='udhcpc-monitor'
+DESC='uDHCP Client Monitor'
+
+export NAME DESC
+
+exec yonk-service "$@"
