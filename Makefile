@@ -15,15 +15,20 @@ install: $(TARGETS)
 NL_DEPS = "libnl-3.0 libnl-route-3.0"
 CONNTRACK_DEPS = "libnetfilter_conntrack"
 
-conntrack-flush: CFLAGS += `pkg-config $(CONNTRACK_DEPS) --cflags --libs`
+conntrack-flush: CFLAGS += `pkg-config $(CONNTRACK_DEPS) --cflags`
+conntrack-flush: LDLIBS += `pkg-config $(CONNTRACK_DEPS) --libs`
 conntrack-flush: nfct-flush-net.o
 
-route-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags --libs`
+route-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
+route-monitor: LDLIBS += `pkg-config $(NL_DEPS) --libs`
 route-monitor: nl-monitor.o rt-label.o
 
-udhcpc-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags --libs`
+udhcpc-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
+udhcpc-monitor: LDLIBS += `pkg-config $(NL_DEPS) --libs`
 udhcpc-monitor: nl-monitor.o
 
-conntrack-nat-callidus: CFLAGS += `pkg-config $(NL_DEPS) --cflags --libs`
-conntrack-nat-callidus: CFLAGS += `pkg-config $(CONNTRACK_DEPS) --cflags --libs`
+conntrack-nat-callidus: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
+conntrack-nat-callidus: LDLIBS += `pkg-config $(NL_DEPS) --libs`
+conntrack-nat-callidus: CFLAGS += `pkg-config $(CONNTRACK_DEPS) --cflags`
+conntrack-nat-callidus: LDLIBS += `pkg-config $(CONNTRACK_DEPS) --libs`
 conntrack-nat-callidus: nl-monitor.o nfct-flush-net.o
