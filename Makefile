@@ -1,16 +1,18 @@
-TARGETS = conntrack-flush route-monitor conntrack-nat-callidus
-TARGETS += udhcpc-monitor
+TOOLS	 = conntrack-flush route-monitor conntrack-nat-callidus
+SERVICES = udhcpc-monitor
 
-all: $(TARGETS)
+all: $(TOOLS) $(SERVICES)
 
 clean:
-	rm -f *.o $(TARGETS)
+	rm -f *.o $(TOOLS) $(SERVICES)
 
 PREFIX ?= /usr/local
 
-install: $(TARGETS)
+install: $(TOOLS) $(SERVICES)
 	install -D -d $(DESTDIR)/$(PREFIX)/bin
-	install -s -m 0755 $^ $(DESTDIR)/$(PREFIX)/bin
+	install -s -m 0755 $(TOOLS) $(DESTDIR)/$(PREFIX)/bin
+	install -D -d $(DESTDIR)/$(PREFIX)/sbin
+	install -s -m 0755 $(SERVICES) $(DESTDIR)/$(PREFIX)/sbin
 
 NL_DEPS = "libnl-3.0 libnl-route-3.0"
 CONNTRACK_DEPS = "libnetfilter_conntrack"
