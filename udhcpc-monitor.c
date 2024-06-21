@@ -103,6 +103,19 @@ static int cb (struct nl_msg *m, void *ctx)
 	return 0;
 }
 
+static int make_pidfile (const char *path)
+{
+	FILE *to;
+
+	if ((to = fopen (path, "w")) == NULL)
+		return 0;
+
+	return (fprintf (to, "%ld", (long) getpid ()) > 0) &
+	       (fclose (to) == 0);
+}
+
+#define PIDFILE  "/var/run/udhcpc-monitor.pid"
+
 int main (void)
 {
 	int ret;
@@ -112,13 +125,17 @@ int main (void)
 		return 1;
 	}
 
+	make_pidfile (PIDFILE);
+
 	openlog ("udhcpc-monitor", 0, LOG_DAEMON);
 
 	if ((ret = nl_execute (cb, NETLINK_ROUTE, RTM_GETLINK)) < 0 ||
 	    (ret = nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_LINK, 0)) < 0) {
 		syslog (LOG_ERR, "netlink error: %s", nl_geterror (ret));
+		unlink (PIDFILE);
 		return 1;
 	}
 
+	unlink (PIDFILE);
 	return 0;
 }
