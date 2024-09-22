@@ -133,6 +133,12 @@ static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
 	}
 }
 
+static int is_host_addr (int family, int prefix)
+{
+	return	(family == AF_INET  && prefix == 32 ) ||
+		(family == AF_INET6 && prefix == 128);
+}
+
 static void route_info_show (struct route_info *o, struct rtmsg *rtm)
 {
 	char buf[MAX (INET6_ADDRSTRLEN, IF_NAMESIZE)];
@@ -142,7 +148,10 @@ static void route_info_show (struct route_info *o, struct rtmsg *rtm)
 		printf ("default");
 	else {
 		p = inet_ntop (rtm->rtm_family, o->dst, buf, sizeof (buf));
-		printf ("%s/%d", p, rtm->rtm_dst_len);
+		printf ("%s", p);
+
+		if (!is_host_addr (rtm->rtm_family, rtm->rtm_dst_len))
+			printf ("/%d", rtm->rtm_dst_len);
 	}
 
 	if (o->via != NULL) {
