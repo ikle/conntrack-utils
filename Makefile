@@ -1,4 +1,5 @@
 TOOLS	 = conntrack-flush route-monitor conntrack-nat-callidus
+TOOLS	+= route-show
 SERVICES = udhcpc-monitor
 
 all: $(TOOLS) $(SERVICES)
@@ -26,6 +27,10 @@ conntrack-flush: nfct-flush-net.o
 route-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
 route-monitor: LDLIBS += `pkg-config $(NL_DEPS) --libs`
 route-monitor: nl-monitor.o rt-label.o
+
+route-show: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
+route-show: LDLIBS += `pkg-config $(NL_DEPS) --libs`
+route-show: nl-monitor.o rt-label.o
 
 udhcpc-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
 udhcpc-monitor: LDLIBS += `pkg-config $(NL_DEPS) --libs`

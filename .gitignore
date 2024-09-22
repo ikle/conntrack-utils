@@ -4,3 +4,4 @@ conntrack-flush
 route-monitor
 conntrack-nat-callidus
 udhcpc-monitor
+route-show
