@@ -227,18 +227,16 @@ static int show_route_metric (struct route_info *o, int cont, int json)
 
 static int show_route_flags (struct route_info *o, int cont, int json)
 {
-	int c = (!json) & cont;
+	static const char *map[] = { "dead", "pervasive", "onlink", "offload",
+				     "linkdown", "unresolved", "trap" };
+	int i, c = (!json) & cont;
 
 	if (json & cont)  putchar (',');
 	if (json)         printf ("\"flags\":[");
 
-	if (o->flags & RTNH_F_DEAD)		c = show_str ("dead",       c, json);
-	if (o->flags & RTNH_F_PERVASIVE)	c = show_str ("pervasive",  c, json);
-	if (o->flags & RTNH_F_ONLINK)		c = show_str ("onlink",     c, json);
-	if (o->flags & RTNH_F_OFFLOAD)		c = show_str ("offload",    c, json);
-	if (o->flags & RTNH_F_LINKDOWN)		c = show_str ("linkdown",   c, json);
-	if (o->flags & RTNH_F_UNRESOLVED)	c = show_str ("unresolved", c, json);
-	if (o->flags & RTNH_F_TRAP)		c = show_str ("trap",       c, json);
+	for (i = 0; i < ARRAY_SIZE (map); ++i)
+		if (o->flags & (1 << i))
+			c = show_str (map[i], c, json);
 
 	if ((o->flags & ~0x7f) != 0 && !json)
 		printf (" flags %x", o->flags & ~0x7f), c = 1;
