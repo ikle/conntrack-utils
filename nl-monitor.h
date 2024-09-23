@@ -18,4 +18,6 @@
 int nl_monitor (nl_recvmsg_msg_cb_t cb, int type, ...);
 int nl_execute (nl_recvmsg_msg_cb_t cb, int type, int cmd);
 
+int nl_execute_ex (nl_recvmsg_msg_cb_t cb, int family, int type, int cmd);
+
 #endif  /* _NL_MONITOR_H */
