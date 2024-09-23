@@ -7,7 +7,7 @@
  */
 
 #ifndef RT_LABEL_H
-#define RT_LABEL_H
+#define RT_LABEL_H  1
 
 const char *rt_proto (unsigned char index);
 const char *rt_scope (unsigned char index);
