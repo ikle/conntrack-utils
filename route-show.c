@@ -21,6 +21,10 @@
 #include "nl-monitor.h"
 #include "rt-label.h"
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a)  (sizeof (a) / sizeof ((a)[0]))
+#endif
+
 static void show_proto (unsigned char index)
 {
 	const char *label = rt_proto (index);
@@ -57,6 +61,21 @@ static void show_table (unsigned index)
 		printf (" table %u", index);
 }
 
+static const char *get_route_type (unsigned i, char *buf, size_t size)
+{
+	static const char *map[] = {
+		"unspec", "unicast", "local", "broadcast", "anycast",
+		"multicast", "blackhole", "unreachable", "prohibit", "throw",
+		"nat", "xresolve"
+	};
+
+	if (i < ARRAY_SIZE (map))
+		return map[i];
+
+	snprintf (buf, size, "type-%u", i);
+	return buf;
+}
+
 static const char *get_pref (int index)
 {
 	switch (index) {
@@ -66,30 +85,6 @@ static const char *get_pref (int index)
 	case ICMPV6_ROUTER_PREF_LOW:		return "low";
 	default:				return "unknown";
 	}
-}
-
-static void show_route_type (unsigned type)
-{
-#define SHOW(type, name)  case RTN_##type: printf ("%s ", name); break;
-
-	switch (type) {
-	case RTN_UNICAST:
-		return;
-	SHOW (LOCAL,		"local")
-	SHOW (BROADCAST,	"broadcast")
-	SHOW (ANYCAST,		"anycast")
-	SHOW (MULTICAST,	"multicast")
-	SHOW (BLACKHOLE,	"blackhole")
-	SHOW (UNREACHABLE,	"unreachable")
-	SHOW (PROHIBIT,		"prohibit")
-	SHOW (THROW,		"throw")
-	SHOW (NAT,		"nat")
-
-	default:
-		printf ("route-type %02x ", type);
-	}
-
-#undef SHOW
 }
 
 static void show_route_flags (unsigned flags)
@@ -148,7 +143,8 @@ static void route_info_show (struct route_info *o, struct rtmsg *rtm)
 	char buf[MAX (INET6_ADDRSTRLEN, IF_NAMESIZE)];
 	const char *p;
 
-	show_route_type (rtm->rtm_type);
+	if (rtm->rtm_type > RTN_UNICAST)
+		printf ("%s ", get_route_type (rtm->rtm_type, buf, sizeof (buf)));
 
 	if (o->dst == NULL)
 		printf ("default");
