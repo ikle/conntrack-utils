@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <sys/socket.h>		/* AF_INET*		*/
 
@@ -68,6 +69,33 @@ static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
 	}
 }
 
+static int show_str_opt (const char *n, const char *v, int cont, int json)
+{
+	if (cont)	putchar (json ? ',' : ' ');
+	if (json)	printf ("\"%s\":\"%s\"", n, v);
+	else		printf ("%s %s", n, v);
+
+	return 1;
+}
+
+static int show_int_opt (const char *n, int v, int cont, int json)
+{
+	if (cont)	putchar (json ? ',' : ' ');
+	if (json)	printf ("\"%s\":%d", n, v);
+	else		printf ("%s %d", n, v);
+
+	return 1;
+}
+
+static int show_str (const char *v, int cont, int json)
+{
+	if (cont)	putchar (json ? ',' : ' ');
+	if (json)	printf ("\"%s\"", v);
+	else		printf ("%s", v);
+
+	return 1;
+}
+
 static int show_route_type (struct route_info *o, int cont, int json)
 {
 	static const char *map[] = {
@@ -79,10 +107,14 @@ static int show_route_type (struct route_info *o, int cont, int json)
 	if (o->type < RTN_LOCAL)
 		return cont;
 
+	if (json)  printf ("\"type\":\"");
+
 	if (o->type < ARRAY_SIZE (map))
-		printf ("%s ", map[o->type]);
+		printf ("%s", map[o->type]);
 	else
-		printf ("type-%u ", o->type);
+		printf ("type-%u", o->type);
+
+	if (json)  printf ("\"");
 
 	return 1;
 }
@@ -91,6 +123,9 @@ static int show_route_dst (struct route_info *o, int cont, int json)
 {
 	char buf[INET6_ADDRSTRLEN];
 	const char *p;
+
+	if (cont)  putchar (json ? ',' : ' ');
+	if (json)  printf ("\"dst\":\"");
 
 	if (o->dst == NULL)
 		printf ("default");
@@ -101,6 +136,8 @@ static int show_route_dst (struct route_info *o, int cont, int json)
 		if (!is_host_addr (o->family, o->dst_len))
 			printf ("/%d", o->dst_len);
 	}
+
+	if (json)  printf ("\"");
 
 	return 1;
 }
@@ -114,8 +151,7 @@ static int show_route_via (struct route_info *o, int cont, int json)
 		return cont;
 
 	p = inet_ntop (o->family, o->via, buf, sizeof (buf));
-	printf (" via %s", p);
-	return 1;
+	return show_str_opt (json ? "gateway" : "via", p, cont, json);
 }
 
 static int show_route_dev (struct route_info *o, int cont, int json)
@@ -127,11 +163,9 @@ static int show_route_dev (struct route_info *o, int cont, int json)
 		return cont;
 
 	if ((p = if_indextoname (o->dev, buf)) != NULL)
-		printf (" dev %s", p);
-	else
-		printf (" dev %d", o->dev);
+		return show_str_opt ("dev", p, cont, json);
 
-	return 1;
+	return show_int_opt ("dev", o->dev, cont, json);
 }
 
 static int show_route_table (struct route_info *o, int cont, int json)
@@ -142,23 +176,20 @@ static int show_route_table (struct route_info *o, int cont, int json)
 		return cont;
 
 	if (label != NULL)
-		printf (" table %s", label);
-	else
-		printf (" table %u", o->table);
+		return show_str_opt ("table", label, cont, json);
 
-	return 1;
+	return show_int_opt ("table", o->table, cont, json);
 }
 
 static int show_route_proto (struct route_info *o, int cont, int json)
 {
 	const char *label = rt_proto (o->proto);
+	const char *name  = json ? "protocol" : "proto";
 
 	if (label != NULL)
-		printf (" proto %s", label);
-	else
-		printf (" proto %u", o->scope);
+		return show_str_opt (name, label, cont, json);
 
-	return 1;
+	return show_int_opt (name, o->proto, cont, json);
 }
 
 static int show_route_scope (struct route_info *o, int cont, int json)
@@ -169,11 +200,9 @@ static int show_route_scope (struct route_info *o, int cont, int json)
 		return cont;
 
 	if (label != NULL)
-		printf (" scope %s", label);
-	else
-		printf (" scope %u", o->scope);
+		return show_str_opt ("scope", label, cont, json);
 
-	return 1;
+	return show_int_opt ("scope", o->scope, cont, json);
 }
 
 static int show_route_src (struct route_info *o, int cont, int json)
@@ -185,8 +214,7 @@ static int show_route_src (struct route_info *o, int cont, int json)
 		return cont;
 
 	p = inet_ntop (o->family, o->src, buf, sizeof (buf));
-	printf (" src %s", p);
-	return 1;
+	return show_str_opt (json ? "prefsrc" : "src", p, cont, json);
 }
 
 static int show_route_metric (struct route_info *o, int cont, int json)
@@ -194,24 +222,30 @@ static int show_route_metric (struct route_info *o, int cont, int json)
 	if (o->metric < 0)
 		return cont;
 
-	printf (" metric %d", o->metric);
-	return 1;
+	return show_int_opt ("metric", o->metric, cont, json);
 }
 
 static int show_route_flags (struct route_info *o, int cont, int json)
 {
-	if (o->flags & RTNH_F_DEAD)		printf (" dead");
-	if (o->flags & RTNH_F_PERVASIVE)	printf (" pervasive");
-	if (o->flags & RTNH_F_ONLINK)		printf (" onlink");
-	if (o->flags & RTNH_F_OFFLOAD)		printf (" offload");
-	if (o->flags & RTNH_F_LINKDOWN)		printf (" linkdown");
-	if (o->flags & RTNH_F_UNRESOLVED)	printf (" unresolved");
-	if (o->flags & RTNH_F_TRAP)		printf (" trap");
+	int c = (!json) & cont;
 
-	if ((o->flags & ~0x7f) != 0)
-		printf (" flags %x", o->flags & ~0x7f);
+	if (json & cont)  putchar (',');
+	if (json)         printf ("\"flags\":[");
 
-	return o->flags != 0 ? 1 : cont;
+	if (o->flags & RTNH_F_DEAD)		c = show_str ("dead",       c, json);
+	if (o->flags & RTNH_F_PERVASIVE)	c = show_str ("pervasive",  c, json);
+	if (o->flags & RTNH_F_ONLINK)		c = show_str ("onlink",     c, json);
+	if (o->flags & RTNH_F_OFFLOAD)		c = show_str ("offload",    c, json);
+	if (o->flags & RTNH_F_LINKDOWN)		c = show_str ("linkdown",   c, json);
+	if (o->flags & RTNH_F_UNRESOLVED)	c = show_str ("unresolved", c, json);
+	if (o->flags & RTNH_F_TRAP)		c = show_str ("trap",       c, json);
+
+	if ((o->flags & ~0x7f) != 0 && !json)
+		printf (" flags %x", o->flags & ~0x7f), c = 1;
+
+	if (json)  printf ("]");
+
+	return cont | json | c;
 }
 
 static int show_route_pref (struct route_info *o, int cont, int json)
@@ -222,16 +256,17 @@ static int show_route_pref (struct route_info *o, int cont, int json)
 		return cont;
 
 	if (o->pref < ARRAY_SIZE (map))
-		printf (" pref %s", map[o->pref]);
-	else
-		printf (" pref %u ", o->pref);
+		return show_str_opt ("pref", map[o->pref], cont, json);
 
-	return 1;
+	return show_int_opt ("pref", o->pref, cont, json);
 }
 
-static void route_info_show (struct route_info *o, int json)
+static int route_info_show (struct route_info *o, int cont, int json)
 {
 	int c = 0;
+
+	if (json && cont)  putchar (',');
+	if (json)          putchar ('{');
 
 	c = show_route_type   (o, c, json);
 	c = show_route_dst    (o, c, json);
@@ -245,12 +280,15 @@ static void route_info_show (struct route_info *o, int json)
 	c = show_route_flags  (o, c, json);
 	c = show_route_pref   (o, c, json);
 
-	if (c)
-		printf ("\n");
+	putchar (json ? '}' : '\n');
+	return 1;
 }
+
+static int json;
 
 static int process_route (struct nlmsghdr *h, void *ctx)
 {
+	static int cont;
 	struct rtmsg *rtm = NLMSG_DATA (h);
 	struct rtattr *rta;
 	int len;
@@ -271,7 +309,7 @@ static int process_route (struct nlmsghdr *h, void *ctx)
 	)
 		route_info_set_rta (&ri, rta);
 
-	route_info_show (&ri, 0);
+	cont = route_info_show (&ri, cont, json);
 	return 0;
 }
 
@@ -282,14 +320,21 @@ static int cb (struct nl_msg *m, void *ctx)
 	return h->nlmsg_type == RTM_NEWROUTE ? process_route (h, ctx) : 0;
 }
 
-int main (void)
+int main (int argc, char *argv[])
 {
 	int ret;
+
+	if (argc > 1 && strcmp ("-j", argv[1]) == 0)
+		json = 1;
+
+	if (json)  putchar ('[');
 
 	if ((ret = nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE)) < 0) {
 		nl_perror (ret, "netlink show");
 		return 1;
 	}
+
+	if (json)  printf ("]\n");
 
 	return 0;
 }
