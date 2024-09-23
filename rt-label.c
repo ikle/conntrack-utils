@@ -1,3 +1,11 @@
+/*
+ * Routing Tables Labels
+ *
+ * Copyright (c) 2018-2024 Alexei A. Smekalkine <ikle@ikle.ru>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
