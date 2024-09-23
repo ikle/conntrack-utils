@@ -1,3 +1,11 @@
+/*
+ * Routing Tables Viewer
+ *
+ * Copyright (c) 2016-2024 Alexei A. Smekalkine <ikle@ikle.ru>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #include <stdio.h>
 #include <string.h>
 
