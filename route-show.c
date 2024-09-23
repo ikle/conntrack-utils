@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 
-#include <sys/param.h>		/* MAX			*/
 #include <sys/socket.h>		/* AF_INET*		*/
 
 #include <net/if.h>		/* if_indextoname	*/
@@ -29,69 +28,6 @@ static int is_host_addr (int family, int prefix)
 {
 	return	(family == AF_INET  && prefix == 32 ) ||
 		(family == AF_INET6 && prefix == 128);
-}
-
-static void show_proto (unsigned char index)
-{
-	const char *label = rt_proto (index);
-
-	if (label != NULL)
-		printf (" proto %s", label);
-	else
-		printf (" proto %u", index);
-}
-
-static void show_scope (unsigned char index)
-{
-	const char *label = rt_scope (index);
-
-	if (index == RT_SCOPE_UNIVERSE)
-		return;
-
-	if (label != NULL)
-		printf (" scope %s", label);
-	else
-		printf (" scope %u", index);
-}
-
-static void show_table (unsigned index)
-{
-	const char *label = rt_table (index);
-
-	if (index == RT_TABLE_MAIN)
-		return;
-
-	if (label != NULL)
-		printf (" table %s", label);
-	else
-		printf (" table %u", index);
-}
-
-static const char *get_pref (int index)
-{
-	switch (index) {
-	case ICMPV6_ROUTER_PREF_MEDIUM:		return "medium";
-	case ICMPV6_ROUTER_PREF_HIGH:		return "high";
-	case ICMPV6_ROUTER_PREF_INVALID:	return "invalid";
-	case ICMPV6_ROUTER_PREF_LOW:		return "low";
-	default:				return "unknown";
-	}
-}
-
-static void show_route_flags (unsigned flags)
-{
-	if (flags & RTNH_F_DEAD)	printf (" dead");
-	if (flags & RTNH_F_PERVASIVE)	printf (" pervasive");
-	if (flags & RTNH_F_ONLINK)	printf (" onlink");
-	if (flags & RTNH_F_OFFLOAD)	printf (" offload");
-	if (flags & RTNH_F_LINKDOWN)	printf (" linkdown");
-	if (flags & RTNH_F_UNRESOLVED)	printf (" unresolved");
-	if (flags & RTNH_F_TRAP)	printf (" trap");
-
-	flags &= ~0x7f;
-
-	if (flags != 0)
-		printf (" flags %x", flags);
 }
 
 struct route_info {
@@ -132,7 +68,7 @@ static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
 	}
 }
 
-static int show_route_type (struct route_info *o, int json)
+static int show_route_type (struct route_info *o, int cont, int json)
 {
 	static const char *map[] = {
 		"unspec", "unicast", "local", "broadcast", "anycast",
@@ -141,7 +77,7 @@ static int show_route_type (struct route_info *o, int json)
 	};
 
 	if (o->type < RTN_LOCAL)
-		return 0;
+		return cont;
 
 	if (o->type < ARRAY_SIZE (map))
 		printf ("%s ", map[o->type]);
@@ -151,12 +87,10 @@ static int show_route_type (struct route_info *o, int json)
 	return 1;
 }
 
-static void route_info_show (struct route_info *o, int json)
+static int show_route_dst (struct route_info *o, int cont, int json)
 {
-	char buf[MAX (INET6_ADDRSTRLEN, IF_NAMESIZE)];
+	char buf[INET6_ADDRSTRLEN];
 	const char *p;
-
-	show_route_type (o, json);
 
 	if (o->dst == NULL)
 		printf ("default");
@@ -168,38 +102,151 @@ static void route_info_show (struct route_info *o, int json)
 			printf ("/%d", o->dst_len);
 	}
 
-	if (o->via != NULL) {
-		p = inet_ntop (o->family, o->via, buf, sizeof (buf));
-		printf (" via %s", p);
-	}
+	return 1;
+}
 
-	if (o->dev > 0) {
-		if ((p = if_indextoname (o->dev, buf)) != NULL)
-			printf (" dev %s", p);
-		else
-			printf (" dev %d", o->dev);
-	}
+static int show_route_via (struct route_info *o, int cont, int json)
+{
+	char buf[INET6_ADDRSTRLEN];
+	const char *p;
 
-	if (o->table != RT_TABLE_UNSPEC)
-		show_table (o->table);
+	if (o->via == NULL)
+		return cont;
 
-	show_proto (o->proto);
-	show_scope (o->scope);
+	p = inet_ntop (o->family, o->via, buf, sizeof (buf));
+	printf (" via %s", p);
+	return 1;
+}
 
-	if (o->src != NULL) {
-		p = inet_ntop (o->family, o->src, buf, sizeof (buf));
-		printf (" src %s", p);
-	}
+static int show_route_dev (struct route_info *o, int cont, int json)
+{
+	char buf[IF_NAMESIZE];
+	const char *p;
 
-	if (o->metric >= 0)
-		printf (" metric %d", o->metric);
+	if (o->dev <= 0)
+		return cont;
 
-	show_route_flags (o->flags);
+	if ((p = if_indextoname (o->dev, buf)) != NULL)
+		printf (" dev %s", p);
+	else
+		printf (" dev %d", o->dev);
 
-	if (o->pref >= 0)
-		printf (" pref %s", get_pref (o->pref));
+	return 1;
+}
 
-	printf ("\n");
+static int show_route_table (struct route_info *o, int cont, int json)
+{
+	const char *label = rt_table (o->table);
+
+	if (o->table == RT_TABLE_UNSPEC || o->table == RT_TABLE_MAIN)
+		return cont;
+
+	if (label != NULL)
+		printf (" table %s", label);
+	else
+		printf (" table %u", o->table);
+
+	return 1;
+}
+
+static int show_route_proto (struct route_info *o, int cont, int json)
+{
+	const char *label = rt_proto (o->proto);
+
+	if (label != NULL)
+		printf (" proto %s", label);
+	else
+		printf (" proto %u", o->scope);
+
+	return 1;
+}
+
+static int show_route_scope (struct route_info *o, int cont, int json)
+{
+	const char *label = rt_scope (o->scope);
+
+	if (o->scope == RT_SCOPE_UNIVERSE)
+		return cont;
+
+	if (label != NULL)
+		printf (" scope %s", label);
+	else
+		printf (" scope %u", o->scope);
+
+	return 1;
+}
+
+static int show_route_src (struct route_info *o, int cont, int json)
+{
+	char buf[INET6_ADDRSTRLEN];
+	const char *p;
+
+	if (o->src == NULL)
+		return cont;
+
+	p = inet_ntop (o->family, o->src, buf, sizeof (buf));
+	printf (" src %s", p);
+	return 1;
+}
+
+static int show_route_metric (struct route_info *o, int cont, int json)
+{
+	if (o->metric < 0)
+		return cont;
+
+	printf (" metric %d", o->metric);
+	return 1;
+}
+
+static int show_route_flags (struct route_info *o, int cont, int json)
+{
+	if (o->flags & RTNH_F_DEAD)		printf (" dead");
+	if (o->flags & RTNH_F_PERVASIVE)	printf (" pervasive");
+	if (o->flags & RTNH_F_ONLINK)		printf (" onlink");
+	if (o->flags & RTNH_F_OFFLOAD)		printf (" offload");
+	if (o->flags & RTNH_F_LINKDOWN)		printf (" linkdown");
+	if (o->flags & RTNH_F_UNRESOLVED)	printf (" unresolved");
+	if (o->flags & RTNH_F_TRAP)		printf (" trap");
+
+	if ((o->flags & ~0x7f) != 0)
+		printf (" flags %x", o->flags & ~0x7f);
+
+	return o->flags != 0 ? 1 : cont;
+}
+
+static int show_route_pref (struct route_info *o, int cont, int json)
+{
+	static const char *map[] = { "medium", "high", "invalid", "low" };
+
+	if (o->pref < 0)
+		return cont;
+
+	if (o->pref < ARRAY_SIZE (map))
+		printf (" pref %s", map[o->pref]);
+	else
+		printf (" pref %u ", o->pref);
+
+	return 1;
+}
+
+static void route_info_show (struct route_info *o, int json)
+{
+	int c = 0;
+
+	c = show_route_type   (o, c, json);
+	c = show_route_dst    (o, c, json);
+	c = show_route_via    (o, c, json);
+	c = show_route_dev    (o, c, json);
+	c = show_route_table  (o, c, json);
+	c = show_route_proto  (o, c, json);
+	c = show_route_scope  (o, c, json);
+	c = show_route_src    (o, c, json);
+	c = show_route_metric (o, c, json);
+	c = show_route_flags  (o, c, json);
+	c = show_route_pref   (o, c, json);
+
+	if (c)
+		printf ("\n");
 }
 
 static int process_route (struct nlmsghdr *h, void *ctx)
