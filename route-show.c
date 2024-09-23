@@ -25,6 +25,12 @@
 #define ARRAY_SIZE(a)  (sizeof (a) / sizeof ((a)[0]))
 #endif
 
+static int is_host_addr (int family, int prefix)
+{
+	return	(family == AF_INET  && prefix == 32 ) ||
+		(family == AF_INET6 && prefix == 128);
+}
+
 static void show_proto (unsigned char index)
 {
 	const char *label = rt_proto (index);
@@ -139,12 +145,6 @@ static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
 	case RTA_PREF:		o->pref   = *(char *) RTA_DATA (rta); break;
 	case RTA_EXPIRES:	o->expire = *(int *)  RTA_DATA (rta); break;
 	}
-}
-
-static int is_host_addr (int family, int prefix)
-{
-	return	(family == AF_INET  && prefix == 32 ) ||
-		(family == AF_INET6 && prefix == 128);
 }
 
 static void route_info_show (struct route_info *o)
