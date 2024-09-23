@@ -41,10 +41,7 @@ const char *rt_proto (unsigned char index)
 		loaded = 1;
 	}
 
-	if (index >= ARRAY_SIZE (table))
-		return NULL;
-
-	return table[index];
+	return index < ARRAY_SIZE (table) ? table[index] : NULL;
 }
 
 const char *rt_scope (unsigned char index)
@@ -57,10 +54,7 @@ const char *rt_scope (unsigned char index)
 		loaded = 1;
 	}
 
-	if (index >= ARRAY_SIZE (table))
-		return NULL;
-
-	return table[index];
+	return index < ARRAY_SIZE (table) ? table[index] : NULL;
 }
 
 const char *rt_table (unsigned index)
@@ -73,8 +67,5 @@ const char *rt_table (unsigned index)
 		loaded = 1;
 	}
 
-	if (index >= ARRAY_SIZE (table))
-		return NULL;
-
-	return table[index];
+	return index < ARRAY_SIZE (table) ? table[index] : NULL;
 }
