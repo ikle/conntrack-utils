@@ -3,6 +3,6 @@
 
 const char *rt_proto (unsigned char index);
 const char *rt_scope (unsigned char index);
-const char *rt_table (unsigned char index);
+const char *rt_table (unsigned index);
 
 #endif  /* RT_LABEL_H */

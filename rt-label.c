@@ -60,7 +60,7 @@ const char *rt_scope (unsigned char index)
 	return table[index];
 }
 
-const char *rt_table (unsigned char index)
+const char *rt_table (unsigned index)
 {
 	static char *table[256];
 	static int loaded;
