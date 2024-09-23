@@ -104,6 +104,8 @@ static void show_route_flags (unsigned flags)
 }
 
 struct route_info {
+	unsigned char family, dst_len, proto, scope, type;
+	unsigned flags;
 	int dev, metric, table, mark, pref, expire;
 	void *dst, *via, *src;
 };
@@ -111,6 +113,13 @@ struct route_info {
 static void route_info_init (struct route_info *o, struct rtmsg *rtm)
 {
 	memset (o, 0, sizeof (*o));
+
+	o->family  = rtm->rtm_family;
+	o->dst_len = rtm->rtm_dst_len;
+	o->proto   = rtm->rtm_protocol;
+	o->scope   = rtm->rtm_scope;
+	o->type    = rtm->rtm_type;
+	o->flags   = rtm->rtm_flags;
 
 	o->metric = -1;
 	o->table = rtm->rtm_table;
@@ -138,26 +147,26 @@ static int is_host_addr (int family, int prefix)
 		(family == AF_INET6 && prefix == 128);
 }
 
-static void route_info_show (struct route_info *o, struct rtmsg *rtm)
+static void route_info_show (struct route_info *o)
 {
 	char buf[MAX (INET6_ADDRSTRLEN, IF_NAMESIZE)];
 	const char *p;
 
-	if (rtm->rtm_type > RTN_UNICAST)
-		printf ("%s ", get_route_type (rtm->rtm_type, buf, sizeof (buf)));
+	if (o->type > RTN_UNICAST)
+		printf ("%s ", get_route_type (o->type, buf, sizeof (buf)));
 
 	if (o->dst == NULL)
 		printf ("default");
 	else {
-		p = inet_ntop (rtm->rtm_family, o->dst, buf, sizeof (buf));
+		p = inet_ntop (o->family, o->dst, buf, sizeof (buf));
 		printf ("%s", p);
 
-		if (!is_host_addr (rtm->rtm_family, rtm->rtm_dst_len))
-			printf ("/%d", rtm->rtm_dst_len);
+		if (!is_host_addr (o->family, o->dst_len))
+			printf ("/%d", o->dst_len);
 	}
 
 	if (o->via != NULL) {
-		p = inet_ntop (rtm->rtm_family, o->via, buf, sizeof (buf));
+		p = inet_ntop (o->family, o->via, buf, sizeof (buf));
 		printf (" via %s", p);
 	}
 
@@ -169,20 +178,20 @@ static void route_info_show (struct route_info *o, struct rtmsg *rtm)
 	}
 
 	if (o->table != RT_TABLE_UNSPEC)
-		show_table (rtm->rtm_table);
+		show_table (o->table);
 
-	show_proto (rtm->rtm_protocol);
-	show_scope (rtm->rtm_scope);
+	show_proto (o->proto);
+	show_scope (o->scope);
 
 	if (o->src != NULL) {
-		p = inet_ntop (rtm->rtm_family, o->src, buf, sizeof (buf));
+		p = inet_ntop (o->family, o->src, buf, sizeof (buf));
 		printf (" src %s", p);
 	}
 
 	if (o->metric >= 0)
 		printf (" metric %d", o->metric);
 
-	show_route_flags (rtm->rtm_flags);
+	show_route_flags (o->flags);
 
 	if (o->pref >= 0)
 		printf (" pref %s", get_pref (o->pref));
@@ -212,7 +221,7 @@ static int process_route (struct nlmsghdr *h, void *ctx)
 	)
 		route_info_set_rta (&ri, rta);
 
-	route_info_show (&ri, rtm);
+	route_info_show (&ri);
 	return 0;
 }
 
