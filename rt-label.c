@@ -6,7 +6,6 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -25,14 +24,10 @@ static void read_table (const char *path, char *table[], size_t size)
 	if ((f = fopen (path, "r")) == NULL)
 		return;
 
-	while ((p = fgets (line, sizeof (line), f)) != NULL) {
-		for (; isblank (*p); ++p) {}
-
-		if (sscanf (p, "%i %s", &index, line) == 2 &&
+	while ((p = fgets (line, sizeof (line), f)) != NULL)
+		if (sscanf (p, " %i %s", &index, line) == 2 &&
 		    index >= 0 && index < size)
 			table[index] = strdup (line);
-	}
-
 	fclose (f);
 }
 
