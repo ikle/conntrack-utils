@@ -67,21 +67,6 @@ static void show_table (unsigned index)
 		printf (" table %u", index);
 }
 
-static const char *get_route_type (unsigned i, char *buf, size_t size)
-{
-	static const char *map[] = {
-		"unspec", "unicast", "local", "broadcast", "anycast",
-		"multicast", "blackhole", "unreachable", "prohibit", "throw",
-		"nat", "xresolve"
-	};
-
-	if (i < ARRAY_SIZE (map))
-		return map[i];
-
-	snprintf (buf, size, "type-%u", i);
-	return buf;
-}
-
 static const char *get_pref (int index)
 {
 	switch (index) {
@@ -147,13 +132,31 @@ static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
 	}
 }
 
-static void route_info_show (struct route_info *o)
+static int show_route_type (struct route_info *o, int json)
+{
+	static const char *map[] = {
+		"unspec", "unicast", "local", "broadcast", "anycast",
+		"multicast", "blackhole", "unreachable", "prohibit", "throw",
+		"nat", "xresolve"
+	};
+
+	if (o->type < RTN_LOCAL)
+		return 0;
+
+	if (o->type < ARRAY_SIZE (map))
+		printf ("%s ", map[o->type]);
+	else
+		printf ("type-%u ", o->type);
+
+	return 1;
+}
+
+static void route_info_show (struct route_info *o, int json)
 {
 	char buf[MAX (INET6_ADDRSTRLEN, IF_NAMESIZE)];
 	const char *p;
 
-	if (o->type > RTN_UNICAST)
-		printf ("%s ", get_route_type (o->type, buf, sizeof (buf)));
+	show_route_type (o, json);
 
 	if (o->dst == NULL)
 		printf ("default");
@@ -221,7 +224,7 @@ static int process_route (struct nlmsghdr *h, void *ctx)
 	)
 		route_info_set_rta (&ri, rta);
 
-	route_info_show (&ri);
+	route_info_show (&ri, 0);
 	return 0;
 }
 
