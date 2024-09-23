@@ -148,6 +148,8 @@ static void route_info_show (struct route_info *o, struct rtmsg *rtm)
 	char buf[MAX (INET6_ADDRSTRLEN, IF_NAMESIZE)];
 	const char *p;
 
+	show_route_type (rtm->rtm_type);
+
 	if (o->dst == NULL)
 		printf ("default");
 	else {
@@ -206,8 +208,6 @@ static int process_route (struct nlmsghdr *h, void *ctx)
 		return 0;
 
 	route_info_init (&ri, rtm);
-
-	show_route_type (rtm->rtm_type);
 
 	for (
 		rta = RTM_RTA (rtm), len = RTM_PAYLOAD (h);
