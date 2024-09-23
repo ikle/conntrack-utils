@@ -7,18 +7,14 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 
-#include <sys/param.h>		/* MAX */
+#include <sys/param.h>		/* MAX			*/
+#include <sys/socket.h>		/* AF_INET*		*/
 
-#include <net/if.h>		/* if_indextoname */
-#include <net/if_arp.h>
-#include <netinet/in.h>
+#include <net/if.h>		/* if_indextoname	*/
 #include <arpa/inet.h>
 
-#include <linux/icmpv6.h>
-#include <linux/netlink.h>
-#include <linux/wireless.h>
+#include <linux/icmpv6.h>	/* ICMPV6_ROUTER_PREF_*	*/
 #include <netlink/netlink.h>
 #include <netlink/msg.h>
 
