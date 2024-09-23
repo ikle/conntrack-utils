@@ -318,16 +318,24 @@ static int cb (struct nl_msg *m, void *ctx)
 	return h->nlmsg_type == RTM_NEWROUTE ? process_route (h, ctx) : 0;
 }
 
+#define GET_OPT(opt, action)						\
+	do {								\
+		if (argc > 1 && strcmp (opt, argv[1]) == 0)		\
+			action, --argc, ++argv;				\
+	}								\
+	while (0)
+
 int main (int argc, char *argv[])
 {
-	int ret;
+	int family = AF_UNSPEC, ret;
 
-	if (argc > 1 && strcmp ("-j", argv[1]) == 0)
-		json = 1;
+	GET_OPT ("-j", json = 1);
+	GET_OPT ("-4", family = AF_INET);
+	GET_OPT ("-6", family = AF_INET6);
 
 	if (json)  putchar ('[');
 
-	if ((ret = nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE)) < 0) {
+	if ((ret = nl_execute_ex (cb, family, NETLINK_ROUTE, RTM_GETROUTE)) < 0) {
 		nl_perror (ret, "netlink show");
 		return 1;
 	}
