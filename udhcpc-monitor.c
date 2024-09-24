@@ -67,8 +67,9 @@ static int action (const char *name, unsigned flags)
 	return udhcpc_renew (name);
 }
 
-static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
+static int process_link (struct nlmsghdr *h, void *ctx)
 {
+	struct ifinfomsg *o = NLMSG_DATA (h);
 	struct rtattr *rta;
 	int len;
 	const char *name = NULL;
@@ -78,8 +79,7 @@ static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
 		RTA_OK (rta, len);
 		rta = RTA_NEXT (rta, len)
 	)
-		switch (rta->rta_type) {
-		case IFLA_IFNAME:
+		if (rta->rta_type ==  IFLA_IFNAME) {
 			name = RTA_DATA (rta);
 			break;
 		}
@@ -87,7 +87,6 @@ static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
 	if (action (name, o->ifi_flags))
 		syslog (LOG_NOTICE,
 			"%s: carrier detected, requested DHCP renew", name);
-
 	return 0;
 }
 
@@ -95,12 +94,7 @@ static int cb (struct nl_msg *m, void *ctx)
 {
 	struct nlmsghdr *h = nlmsg_hdr (m);
 
-	switch (h->nlmsg_type) {
-	case RTM_NEWLINK:
-		return process_link (h, NLMSG_DATA (h), ctx);
-	}
-
-	return 0;
+	return h->nlmsg_type == RTM_NEWLINK ? process_link (h, ctx) : 0;
 }
 
 static int make_pidfile (const char *path)
