@@ -26,15 +26,15 @@ conntrack-flush: nfct-flush-net.o
 
 route-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
 route-monitor: LDLIBS += `pkg-config $(NL_DEPS) --libs`
-route-monitor: nl-monitor.o rt-label.o
+route-monitor: nl-execute.o nl-monitor.o rt-label.o
 
 route-show: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
 route-show: LDLIBS += `pkg-config $(NL_DEPS) --libs`
-route-show: nl-monitor.o rt-label.o
+route-show: nl-execute.o rt-label.o
 
 udhcpc-monitor: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
 udhcpc-monitor: LDLIBS += `pkg-config $(NL_DEPS) --libs`
-udhcpc-monitor: nl-monitor.o
+udhcpc-monitor: nl-execute.o nl-monitor.o
 
 conntrack-nat-callidus: CFLAGS += `pkg-config $(NL_DEPS) --cflags`
 conntrack-nat-callidus: LDLIBS += `pkg-config $(NL_DEPS) --libs`
