@@ -28,11 +28,11 @@ int nl_monitor (nl_recvmsg_msg_cb_t cb, int type, ...)
 	/* notifications do not use sequence numbers */
 	nl_socket_disable_seq_check (h);
 
-	ret = nl_socket_modify_cb(h, NL_CB_VALID, NL_CB_CUSTOM, cb, NULL);
+	ret = nl_socket_modify_cb (h, NL_CB_VALID, NL_CB_CUSTOM, cb, NULL);
 	if (ret < 0)
 		return ret;
 
-	if ((ret = nl_connect(h, type)) < 0)
+	if ((ret = nl_connect (h, type)) < 0)
 		return ret;
 
 	va_start (ap, type);
@@ -60,11 +60,11 @@ int nl_execute_ex (nl_recvmsg_msg_cb_t cb, int family, int type, int cmd)
 	/* notifications do not use sequence numbers */
 	nl_socket_disable_seq_check (h);
 
-	ret = nl_socket_modify_cb(h, NL_CB_VALID, NL_CB_CUSTOM, cb, NULL);
+	ret = nl_socket_modify_cb (h, NL_CB_VALID, NL_CB_CUSTOM, cb, NULL);
 	if (ret < 0)
 		return ret;
 
-	if ((ret = nl_connect(h, type)) < 0)
+	if ((ret = nl_connect (h, type)) < 0)
 		return ret;
 
 	ret = nl_rtgen_request (h, cmd, family, NLM_F_REQUEST | NLM_F_ROOT);
