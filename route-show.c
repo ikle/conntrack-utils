@@ -283,6 +283,7 @@ static int route_info_show (struct route_info *o, int cont, int json)
 }
 
 static int json;
+static int table = RT_TABLE_MAIN;
 
 static int process_route (struct nlmsghdr *h, void *ctx)
 {
@@ -295,7 +296,7 @@ static int process_route (struct nlmsghdr *h, void *ctx)
 	if (rtm->rtm_family != AF_INET && rtm->rtm_family != AF_INET6)
 		return 0;
 
-	if (rtm->rtm_table == RT_TABLE_LOCAL)
+	if (table > 0 && rtm->rtm_table != table)
 		return 0;
 
 	route_info_init (&ri, rtm);
@@ -332,6 +333,7 @@ int main (int argc, char *argv[])
 	GET_OPT ("-j", json = 1);
 	GET_OPT ("-4", family = AF_INET);
 	GET_OPT ("-6", family = AF_INET6);
+	GET_OPT ("-a", table  = 0);
 
 	if (json)  putchar ('[');
 
