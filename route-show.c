@@ -31,6 +31,33 @@ static int is_host_addr (int family, int prefix)
 		(family == AF_INET6 && prefix == 128);
 }
 
+static int show_str_opt (const char *n, const char *v, int cont, int json)
+{
+	if (cont)	putchar (json ? ',' : ' ');
+	if (json)	printf ("\"%s\":\"%s\"", n, v);
+	else		printf ("%s %s", n, v);
+
+	return 1;
+}
+
+static int show_int_opt (const char *n, int v, int cont, int json)
+{
+	if (cont)	putchar (json ? ',' : ' ');
+	if (json)	printf ("\"%s\":%d", n, v);
+	else		printf ("%s %d", n, v);
+
+	return 1;
+}
+
+static int show_str (const char *v, int cont, int json)
+{
+	if (cont)	putchar (json ? ',' : ' ');
+	if (json)	printf ("\"%s\"", v);
+	else		printf ("%s", v);
+
+	return 1;
+}
+
 struct route_info {
 	unsigned char family, dst_len, proto, scope, type;
 	unsigned flags;
@@ -67,33 +94,6 @@ static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
 	case RTA_PREF:		o->pref   = *(char *) RTA_DATA (rta); break;
 	case RTA_EXPIRES:	o->expire = *(int *)  RTA_DATA (rta); break;
 	}
-}
-
-static int show_str_opt (const char *n, const char *v, int cont, int json)
-{
-	if (cont)	putchar (json ? ',' : ' ');
-	if (json)	printf ("\"%s\":\"%s\"", n, v);
-	else		printf ("%s %s", n, v);
-
-	return 1;
-}
-
-static int show_int_opt (const char *n, int v, int cont, int json)
-{
-	if (cont)	putchar (json ? ',' : ' ');
-	if (json)	printf ("\"%s\":%d", n, v);
-	else		printf ("%s %d", n, v);
-
-	return 1;
-}
-
-static int show_str (const char *v, int cont, int json)
-{
-	if (cont)	putchar (json ? ',' : ' ');
-	if (json)	printf ("\"%s\"", v);
-	else		printf ("%s", v);
-
-	return 1;
 }
 
 static int show_route_type (struct route_info *o, int cont, int json)
