@@ -165,7 +165,25 @@ struct route_info {
 	void *dst, *via, *src, *hops;
 };
 
-static void route_info_set_rta (struct route_info *o, struct rtattr *rta);
+static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
+{
+	switch (rta->rta_type) {
+	case RTA_DST:		o->dst    =           RTA_DATA (rta); break;
+	case RTA_GATEWAY:	o->via    =           RTA_DATA (rta); break;
+	case RTA_OIF:		o->dev    = *(int *)  RTA_DATA (rta); break;
+	case RTA_PREFSRC:	o->src    =           RTA_DATA (rta); break;
+	case RTA_PRIORITY:	o->metric = *(int *)  RTA_DATA (rta); break;
+	case RTA_TABLE:		o->table  = *(int *)  RTA_DATA (rta); break;
+	case RTA_MARK:		o->mark   = *(int *)  RTA_DATA (rta); break;
+	case RTA_PREF:		o->pref   = *(char *) RTA_DATA (rta); break;
+	case RTA_EXPIRES:	o->expire = *(int *)  RTA_DATA (rta); break;
+
+	case RTA_MULTIPATH:
+		o->hops     = RTA_DATA    (rta);
+		o->hops_len = RTA_PAYLOAD (rta);
+		break;
+	}
+}
 
 static
 void route_info_init (struct route_info *o, struct rtmsg *rtm, size_t len)
@@ -188,26 +206,6 @@ void route_info_init (struct route_info *o, struct rtmsg *rtm, size_t len)
 
 	for (rta = RTM_RTA (rtm); RTA_OK (rta, len); rta = RTA_NEXT (rta, len))
 		route_info_set_rta (o, rta);
-}
-
-static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
-{
-	switch (rta->rta_type) {
-	case RTA_DST:		o->dst    =           RTA_DATA (rta); break;
-	case RTA_GATEWAY:	o->via    =           RTA_DATA (rta); break;
-	case RTA_OIF:		o->dev    = *(int *)  RTA_DATA (rta); break;
-	case RTA_PREFSRC:	o->src    =           RTA_DATA (rta); break;
-	case RTA_PRIORITY:	o->metric = *(int *)  RTA_DATA (rta); break;
-	case RTA_TABLE:		o->table  = *(int *)  RTA_DATA (rta); break;
-	case RTA_MARK:		o->mark   = *(int *)  RTA_DATA (rta); break;
-	case RTA_PREF:		o->pref   = *(char *) RTA_DATA (rta); break;
-	case RTA_EXPIRES:	o->expire = *(int *)  RTA_DATA (rta); break;
-
-	case RTA_MULTIPATH:
-		o->hops     = RTA_DATA    (rta);
-		o->hops_len = RTA_PAYLOAD (rta);
-		break;
-	}
 }
 
 static int show_route_type (struct route_info *o, int cont, int json)
