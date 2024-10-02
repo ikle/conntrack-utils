@@ -165,8 +165,13 @@ struct route_info {
 	void *dst, *via, *src, *hops;
 };
 
-static void route_info_init (struct route_info *o, struct rtmsg *rtm)
+static void route_info_set_rta (struct route_info *o, struct rtattr *rta);
+
+static
+void route_info_init (struct route_info *o, struct rtmsg *rtm, size_t len)
 {
+	struct rtattr *rta;
+
 	memset (o, 0, sizeof (*o));
 
 	o->family  = rtm->rtm_family;
@@ -180,6 +185,9 @@ static void route_info_init (struct route_info *o, struct rtmsg *rtm)
 	o->table = rtm->rtm_table;
 	o->pref = -1;
 	o->hops = NULL;
+
+	for (rta = RTM_RTA (rtm); RTA_OK (rta, len); rta = RTA_NEXT (rta, len))
+		route_info_set_rta (o, rta);
 }
 
 static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
@@ -425,8 +433,6 @@ static int process_route (struct nlmsghdr *h, void *ctx)
 {
 	static int cont;
 	struct rtmsg *rtm = NLMSG_DATA (h);
-	struct rtattr *rta;
-	int len;
 	struct route_info ri;
 
 	if (rtm->rtm_family != AF_INET && rtm->rtm_family != AF_INET6)
@@ -435,14 +441,7 @@ static int process_route (struct nlmsghdr *h, void *ctx)
 	if (table > 0 && rtm->rtm_table != table)
 		return 0;
 
-	route_info_init (&ri, rtm);
-
-	for (
-		rta = RTM_RTA (rtm), len = RTM_PAYLOAD (h);
-		RTA_OK (rta, len);
-		rta = RTA_NEXT (rta, len)
-	)
-		route_info_set_rta (&ri, rta);
+	route_info_init (&ri, rtm, RTM_PAYLOAD (h));
 
 	cont = route_info_show (&ri, cont, json);
 	return 0;
