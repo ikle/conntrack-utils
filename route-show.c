@@ -292,6 +292,9 @@ static int show_route_proto (struct route_info *o, int cont, int json)
 	const char *label = rt_proto (o->proto);
 	const char *name  = json ? "protocol" : "proto";
 
+	if (o->proto == RTPROT_BOOT)
+		return cont;
+
 	if (label != NULL)
 		return show_str_opt (name, label, cont, json);
 
