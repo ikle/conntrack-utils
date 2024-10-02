@@ -58,11 +58,111 @@ static int show_str (const char *v, int cont, int json)
 	return 1;
 }
 
+#define RTNH_NEXT_NG(rtnh, len)  ((len) -= RTNH_ALIGN((rtnh)->rtnh_len), RTNH_NEXT(rtnh))
+#define RTNH_PAYLOAD(rtnh)       ((int)((rtnh)->rtnh_len) - RTNH_LENGTH(0))
+
+struct nexthop_info {
+	unsigned char family, flags, hops, dev;
+	void *via;
+};
+
+static void
+nexthop_info_init (struct nexthop_info *o, int family, struct rtnexthop *nh)
+{
+	struct rtattr *rta;
+	int len;
+
+	o->family = family;
+	o->flags  = nh->rtnh_flags;
+	o->hops   = nh->rtnh_hops;
+	o->dev    = nh->rtnh_ifindex;
+	o->via    = NULL;
+
+	for (
+		rta = RTNH_DATA (nh), len = RTNH_PAYLOAD (nh);
+		RTA_OK (rta, len);
+		rta = RTA_NEXT (rta, len)
+	)
+		switch (rta->rta_type) {
+		case RTA_GATEWAY:  o->via = RTA_DATA (rta); break;
+		}
+}
+
+static int show_nexthop_via (struct nexthop_info *o, int cont, int json)
+{
+	char buf[INET6_ADDRSTRLEN];
+	const char *p;
+
+	if (o->via == NULL)
+		return cont;
+
+	p = inet_ntop (o->family, o->via, buf, sizeof (buf));
+	return show_str_opt (json ? "gateway" : "via", p, cont, json);
+}
+
+static int show_nexthop_dev (struct nexthop_info *o, int cont, int json)
+{
+	char buf[IF_NAMESIZE];
+	const char *p;
+
+	if (o->dev <= 0)
+		return cont;
+
+	if ((p = if_indextoname (o->dev, buf)) != NULL)
+		return show_str_opt ("dev", p, cont, json);
+
+	return show_int_opt ("dev", o->dev, cont, json);
+}
+
+static int show_nexthop_weight (struct nexthop_info *o, int cont, int json)
+{
+	return show_int_opt ("weight", o->hops + 1, cont, json);
+}
+
+static int show_hexthop_flags (struct nexthop_info *o, int cont, int json)
+{
+	static const char *map[] = { "dead", "pervasive", "onlink", "offload",
+				     "linkdown", "unresolved", "trap" };
+	int i, c = (!json) & cont;
+
+	if (json & cont)  putchar (',');
+	if (json)         printf ("\"flags\":[");
+
+	for (i = 0; i < ARRAY_SIZE (map); ++i)
+		if (o->flags & (1 << i))
+			c = show_str (map[i], c, json);
+
+	if ((o->flags & ~0x7f) != 0 && !json)
+		printf (" flags %x", o->flags & ~0x7f), c = 1;
+
+	if (json)  printf ("]");
+
+	return cont | json | c;
+}
+
+static int nexthop_info_show (struct nexthop_info *o, int cont, int json)
+{
+	int c = !json;
+
+	if (json && cont)  putchar (',');
+	if (json)          putchar ('{');
+	else               printf ("\n\tnexthop");
+
+	c = show_nexthop_via    (o, c, json);
+	c = show_nexthop_dev    (o, c, json);
+	c = show_nexthop_weight (o, c, json);
+	c = show_hexthop_flags  (o, c, json);
+
+	if (json)  putchar ('}');
+
+	return 1;
+}
+
 struct route_info {
 	unsigned char family, dst_len, proto, scope, type;
 	unsigned flags;
-	int dev, metric, table, mark, pref, expire;
-	void *dst, *via, *src;
+	int dev, metric, hops_len, table, mark, pref, expire;
+	void *dst, *via, *src, *hops;
 };
 
 static void route_info_init (struct route_info *o, struct rtmsg *rtm)
@@ -79,6 +179,7 @@ static void route_info_init (struct route_info *o, struct rtmsg *rtm)
 	o->metric = -1;
 	o->table = rtm->rtm_table;
 	o->pref = -1;
+	o->hops = NULL;
 }
 
 static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
@@ -93,6 +194,11 @@ static void route_info_set_rta (struct route_info *o, struct rtattr *rta)
 	case RTA_MARK:		o->mark   = *(int *)  RTA_DATA (rta); break;
 	case RTA_PREF:		o->pref   = *(char *) RTA_DATA (rta); break;
 	case RTA_EXPIRES:	o->expire = *(int *)  RTA_DATA (rta); break;
+
+	case RTA_MULTIPATH:
+		o->hops     = RTA_DATA    (rta);
+		o->hops_len = RTA_PAYLOAD (rta);
+		break;
 	}
 }
 
@@ -259,6 +365,32 @@ static int show_route_pref (struct route_info *o, int cont, int json)
 	return show_int_opt ("pref", o->pref, cont, json);
 }
 
+static int show_route_hops (struct route_info *o, int cont, int json)
+{
+	struct nexthop_info hop;
+	struct rtnexthop *nh;
+	int c = 0, len;
+
+	if (o->hops == NULL)
+		return cont;
+
+	if (json & cont)  putchar (',');
+	if (json)         printf ("\"nexthops\":[");
+
+	for (
+		nh = o->hops, len = o->hops_len;
+		RTNH_OK (nh, len);
+		nh = RTNH_NEXT_NG (nh, len)
+	) {
+		nexthop_info_init (&hop, o->family, nh);
+		c = nexthop_info_show (&hop, c, json);
+	}
+
+	if (json)  printf ("]");
+
+	return 1;
+}
+
 static int route_info_show (struct route_info *o, int cont, int json)
 {
 	int c = 0;
@@ -277,6 +409,7 @@ static int route_info_show (struct route_info *o, int cont, int json)
 	c = show_route_metric (o, c, json);
 	c = show_route_flags  (o, c, json);
 	c = show_route_pref   (o, c, json);
+	c = show_route_hops   (o, c, json);
 
 	putchar (json ? '}' : '\n');
 	return 1;
