@@ -4,5 +4,6 @@ NAME='udhcpc-monitor'
 DESC='uDHCP Client Monitor'
 
 export NAME DESC
+unset BUNDLE DAEMON PIDFILE CONF ARGS
 
 exec yonk-service "$@"
